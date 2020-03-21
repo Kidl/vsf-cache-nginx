@@ -19,7 +19,7 @@ const requestAndWait = (promise: Promise<any>, time: number): Promise<any> => {
 // So then I will be able to refresh certain URL based on requested Tags
 serverHooks.beforeOutputRenderedResponse(({ output, req, context }) => {
   if (!config.get('nginx.enabled')) {
-    return
+    return output
   }
 
   const tagsArray = Array.from(context.output.cacheTags)
