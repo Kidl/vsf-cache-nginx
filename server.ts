@@ -5,6 +5,18 @@ import cache from '@vue-storefront/core/scripts/utils/cache-instance'
 
 let urlsToClear = []
 
+// It sends request then waits provided amount of miliseconds
+const requestAndWait = (promise: Promise<any>, time: number): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    promise.then(() => {
+      console.log(`Waiting ${time/1000} second${time > 1999 ? 's' : ''}`)
+      setTimeout(resolve, time)
+    }).catch(reject)
+  })
+}
+
+// There I will create (Tag -> URL) Map in Redis Cache
+// So then I will be able to refresh certain URL based on requested Tags
 serverHooks.beforeOutputRenderedResponse(({ output, req, context }) => {
   if (!config.get('nginx.enabled')) {
     return
@@ -21,7 +33,6 @@ serverHooks.beforeOutputRenderedResponse(({ output, req, context }) => {
       cache.get(tagUrlMap)
       .then(output => {
         const reqUrl = `${config.get('nginx.protocol')}://${config.get('nginx.host')}:${config.get('nginx.port')}${req.url}`
-        console.log(tagUrlMap, output === null, reqUrl)
         
         cache.set(
           tagUrlMap,
@@ -45,6 +56,8 @@ serverHooks.beforeOutputRenderedResponse(({ output, req, context }) => {
   return output
 })
 
+// There I prepare array of invalidate request to send
+// I am storing them in global array called `urlsToClear`
 serverHooks.beforeCacheInvalidated(({ tags, req }) => {
   // Here saved tags exist
   if (!config.get('nginx.enabled') || !config.get('server.useOutputCache') || !config.get('server.useOutputCacheTagging')) {
@@ -61,7 +74,6 @@ serverHooks.beforeCacheInvalidated(({ tags, req }) => {
       const tagUrlMap = `nginx:${site}:${tag}`
       cache.get(tagUrlMap)
         .then(output => {
-          console.log('Reading', tagUrlMap, output === null)
           
           if (output === null) {
             return
@@ -69,13 +81,13 @@ serverHooks.beforeCacheInvalidated(({ tags, req }) => {
           // output should be an array
           for (let url of output) {
             urlsToClear.push(
-              fetch(url, {
+              requestAndWait(fetch(url, {
                 headers: {
                   'Bypass-Key': config.get('nginx.bypass_key')
                 }
               }).catch(err => {
                 console.error(`Couldn't ban tag: ${tag} in the Nginx`, err);
-              })
+              }), config.get('nginx.bypassTimeOffset'))
             )
           }
 
@@ -89,8 +101,15 @@ serverHooks.beforeCacheInvalidated(({ tags, req }) => {
   }
 })
 
-serverHooks.afterCacheInvalidated(({ tags, req }) => {
-  // Here saved tags do not exist
+// There I will send earlier prepared promises from `urlsToClear` array
+// Why now?
+// Redis' just invalidated data. So only here I can access fresh one
+// I am sending request to nginx with `proxy_cache_bypass` equal 1 
+// So it will skip cache and reach Redis with fresh data
+
+serverHooks.afterCacheInvalidated(() => {
+  // Why am I not preparing promises here?
+  // Here tags might not exist in Redis...
   if (!config.get('nginx.enabled') || !config.get('server.useOutputCache') || !config.get('server.useOutputCacheTagging')) {
     return
   }
