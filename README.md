@@ -49,29 +49,38 @@ Well... as we use Promise.all. We are resolving 2 promises in paralell and after
 
 ## How to test it locally
 1. Run app with `docker-compose up`
-2. Run Varnish with `docker-compose -f src/modules/vsf-cache-varnish/docker-compose.varnish.yml up`
-3. On port :80, you should have Cached with Varnish App. On port :3000 you should have Cached with Redis App.
+2. Run Nginx with `docker-compose -f src/modules/vsf-cache-nginx/docker-compose.nginx.yml up`
+3. On port :80, you should have Cached with Nginx App. On port :3000 you should have Cached with Redis App.
 
-## How to install Varnish on VPS?
-I've just used:
-```
-sudo apt-get install varnish
-```
-
-## How to configure Varnish on production?
-https://devdocs.magento.com/guides/v2.3/config-guide/varnish/config-varnish-configure.html
+It is important to have running Redis in same network. As it is essential for our Nginx cache (same for Varnish option).
 
 ## How to purge cache?
-When we purge Redis' cache. It will also purge Varnish's cache. So just open:
+When we purge Redis' cache. It will also purge Nginx's cache. So just open:
 ```
 http://localhost:3000/invalidate?key=aeSu7aip&tag=*
 ```
+Or:
+```
+http://yourNginxApp/invalidate?key=aeSu7aip&tag=*
+```
 
-## Do I need varnish-modules?
-As we do not cache POST requests (like here: https://github.com/DivanteLtd/vue-storefront-api/tree/develop/docker/varnish). It is **not** needed.
+## Do I need NGINX Plus?
+No. It was important for me to make it work with free version.
 
 ## Caching does not work
 Make sure you have this bugfix in your PWA: https://github.com/DivanteLtd/vue-storefront/pull/4143
 
 ## Invalidate * does not work for category/product
 Make sure it is fixed: https://github.com/DivanteLtd/vue-storefront/issues/4173
+
+## Errors
+Are you getting?:
+```
+app_1  | [ioredis] Unhandled error event: Error: connect ECONNREFUSED 127.0.0.1:6379
+app_1  |     at TCPConnectWrap.afterConnect [as oncomplete] (net.js:1106:14)
+```
+
+It means you do not have running Redis' instance. The easiest solution that I've prepared for you will be run docker-compose with redis:
+```sh
+docker-compose -f docker-compose.redis.yml up
+```
