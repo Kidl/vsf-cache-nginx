@@ -16,7 +16,7 @@ To config's main section add:
 ```json
 "nginx": {
   "enabled": true,
-  "bypass_key": "ad3489sf545824893289dfsdfsd",
+  "bypassKey": "ad3489sf545824893289dfsdfsd",
   "host": "localhost",
   "port": 80,
   "protocol": "http",
@@ -33,7 +33,7 @@ You should also enable those 2 values in `server` section:
 
 Purge request will be send by Node server to Nginx. So if you are using k8s and one machine you probably want to send it via HTTP (without unnecessary TSL).
 
-`bypass_key` - is value that tells Nginx that request is allowed to refresh cache. You should set it to equal this value in Nginx's config:
+`bypassKey` - is value that tells Nginx that request is allowed to refresh cache. You should set it to equal this value in Nginx's config:
 ```
 set $secret_key "ad3489sf545824893289dfsdfsd";
 ```

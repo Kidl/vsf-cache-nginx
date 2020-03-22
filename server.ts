@@ -83,7 +83,7 @@ serverHooks.beforeCacheInvalidated(({ tags, req }) => {
             urlsToClear.push(
               requestAndWait(fetch(url, {
                 headers: {
-                  'Bypass-Key': config.get('nginx.bypass_key')
+                  'Bypass-Key': config.get('nginx.bypassKey')
                 }
               }).catch(err => {
                 console.error(`Couldn't ban tag: ${tag} in the Nginx`, err);
