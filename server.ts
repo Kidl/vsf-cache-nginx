@@ -113,8 +113,8 @@ serverHooks.afterCacheInvalidated(() => {
   if (!config.get('nginx.enabled') || !config.get('server.useOutputCache') || !config.get('server.useOutputCacheTagging')) {
     return
   }
-  console.log('Invalidating Stored Nginx Urls')
   if (urlsToClear && urlsToClear.length) {
+    console.log('Invalidating Stored Nginx Urls')
     Promise.all(urlsToClear).then(() => {
       console.log('Purged tags in NGINX')
     }).catch(err => {
