@@ -39,6 +39,25 @@ set $secret_key "ad3489sf545824893289dfsdfsd";
 ```
 `bypassTimeOffset` - time in miliseconds that app will wait after each Bypass request, by default it is 500ms. But you should find the best one for yourself.
 
+Now you need to apply purge-config loader to your app. Your config will be exposed in page's source or produced by Webpack - app.js. We cannot allow that because someone might use this data to purging your cache all the time! To prevent this merge this PR to your project: https://github.com/DivanteLtd/vue-storefront/pull/4540
+
+It is important to put in your config:
+```
+"purgeConfig": [
+    "server.invalidateCacheKey",
+    "server.invalidateCacheForwardUrl",
+    "server.trace",
+    "redis",
+    "install",
+    "expireHeaders",
+    "fastly",
+    "nginx",
+    "varnish"
+  ]
+```
+
+This array tells app which parts of config should be available only server side! Presented values will be very good base in most cases.
+
 ## Why do we wait between purge requests?
 For real, free version of Nginx allows us only to use `proxy_cache_bypass`. If we set this to `1` - the request will go to the origin and update our cache. So what we do?:
 1. Purge Cache in Redis
